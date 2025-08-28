@@ -537,6 +537,7 @@ class Learner(Configurable):
     def _calculate_losses(
         self, mb: AttrDict, num_invalids: int
     ) -> Tuple[ActionDistribution, Tensor, Tensor | float, Optional[Tensor], Tensor | float, Tensor, Dict]:
+        additional_stats = AttrDict()
         with torch.no_grad(), self.timing.add_time("losses_init"):
             recurrence: int = self.cfg.recurrence
 
@@ -552,6 +553,9 @@ class Learner(Configurable):
         with self.timing.add_time("forward_head"):
             head_outputs = self.actor_critic.forward_head(mb.normalized_obs)
             minibatch_size: int = head_outputs.size(0)
+            # log.info(f"Head Output: {head_outputs[0]}")
+            # log.info(f"Head Output Shape: {head_outputs.shape}")
+            additional_stats["Head Output"] = head_outputs[:,:getattr(self.cfg, 'Hippo_n_feature', 64)]
 
         # initial rnn states
         with self.timing.add_time("bptt_initial"):
@@ -620,7 +624,7 @@ class Learner(Configurable):
                 # log.info(f'Summed values shape: {value.shape}')
         else:
             distance_matrix = None
-
+        additional_stats["Distance Matrix"] = distance_matrix
 
 
 
@@ -711,7 +715,7 @@ class Learner(Configurable):
             adv=adv,
             adv_std=adv_std,
             adv_mean=adv_mean,
-            distance_metric=distance_matrix,
+            additional_stats=additional_stats,
         )
 
         return action_distribution, policy_loss, exploration_loss, kl_old, kl_loss, value_loss, loss_summaries
@@ -966,12 +970,14 @@ class Learner(Configurable):
         for key, value in stats.items():
             stats[key] = to_scalar(value)
         
-        if var.distance_metric != None:
-            summed = torch.sum(torch.sum(var.distance_metric.to(dtype=torch.float),dim=-1),dim=-1)
-            value = summed/(var.distance_metric.shape[1]**2)
+        if var.additional_stats["Distance Matrix"] != None:
+            summed = torch.sum(torch.sum(var.additional_stats["Distance Matrix"].to(dtype=torch.float),dim=-1),dim=-1)
+            value = summed/(var.additional_stats["Distance Matrix"].shape[1]**2)
             meaned_value, stded_value = torch.std_mean(value)
             stats.distance_metric = meaned_value.detach()
             stats.distance_metric_std = stded_value.detach()
+            activated_sequences, _ = torch.std_mean(var.additional_stats["Head Output"].count_nonzero(dim=-1).to(dtype=torch.float))
+            stats.activated_sequences = activated_sequences
 
         return stats
 
