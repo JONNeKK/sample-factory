@@ -13,7 +13,7 @@ vstr = "hipposlam"
 
 cli = (
     "--env=openfield_map2_fixed_loc3 "
-    "--seed=42 "
+    "--seed=11 "
     "--train_for_seconds=108000 "
     "--algo=APPO "
     "--gamma=0.99 "
@@ -78,7 +78,7 @@ cli = (
     "--number_instruction_coef=9 "
     "--save_best_metric=avg_z_00_openfield_map2_fixed_loc3_lenweighted_score "
     "--device=cpu "
-    "--train_dir=./train_dir"
+    "--train_dir=/work/classic/fr_js1764-sample_factory/train_dir"
     "--rec_distances=True"
 )
 
@@ -86,7 +86,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("DistanceMetric", cli, _params.generate_params(False)),
+    Experiment("DistanceMetric2", cli, _params.generate_params(False)),
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
