@@ -605,8 +605,13 @@ class Learner(Configurable):
             
 
             progression = torch.argmax(torch.cat(((sequence_core != 0).to(dtype=torch.int), torch.ones(sequence_core.shape[:2] + (1,), dtype=torch.int)), dim=-1), dim=-1).squeeze(0)
+            masked_progression = torch.where(progression == sequence_core.shape[-1], False, True)
 
             distance_matrix = torch.abs(progression.unsqueeze(-1) - progression.unsqueeze(-2)).to(dtype=torch.float)
+            distance_matrix_mask = torch.logical_and(masked_progression.unsqueeze(-1), masked_progression.unsqueeze(-2))
+
+            masked_distance_matrix = distance_matrix * distance_matrix_mask
+            additional_stats["Distance Matrix Masked"] = masked_distance_matrix
 
             # sum = torch.sum(torch.sum(distance_matrix.to(dtype=torch.float),dim=-1),dim=-1)
             # value = sum/(distance_matrix.shape[1]**2)
