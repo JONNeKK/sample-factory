@@ -980,9 +980,24 @@ class Learner(Configurable):
             value = summed/(var.additional_stats["Distance Matrix"].shape[1]**2)
             meaned_value, stded_value = torch.std_mean(value)
             stats.distance_metric = meaned_value.detach()
+            stats.distance_metric_max = value.max().detach()
+            stats.distance_metric_min = value.min().detach()
             stats.distance_metric_std = stded_value.detach()
-            activated_sequences, _ = torch.std_mean(var.additional_stats["Head Output"].count_nonzero(dim=-1).to(dtype=torch.float))
-            stats.activated_sequences = activated_sequences
+
+            summed_masked = torch.sum(torch.sum(var.additional_stats["Distance Matrix Masked"].to(dtype=torch.float),dim=-1),dim=-1)
+            value_masked = summed_masked/(var.additional_stats["Distance Matrix Masked"].shape[1]**2)
+            meaned_value_masked, stded_value_masked = torch.std_mean(value_masked)
+            stats.distance_metric_masked = meaned_value_masked.detach()
+            stats.distance_metric_masked_max = value_masked.max().detach()
+            stats.distance_metric_masked_min = value_masked.min().detach()
+            stats.distance_metric_masked_std = stded_value_masked.detach()
+
+            activated_sequences = var.additional_stats["Head Output"].count_nonzero(dim=-1).to(dtype=torch.float)
+            meaned_activated_sequences, stded_activated_sequences = torch.std_mean(activated_sequences)
+            stats.activated_sequences = meaned_activated_sequences.detach()
+            stats.activated_sequences_max = activated_sequences.max().detach()
+            stats.activated_sequences_min = activated_sequences.min().detach()
+            stats.activated_sequences_std = stded_activated_sequences.detach()
 
         return stats
 

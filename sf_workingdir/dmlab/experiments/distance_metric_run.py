@@ -4,6 +4,7 @@ from sample_factory.launcher.run_description import Experiment, ParamGrid, RunDe
 _params = ParamGrid(
     [
         ("rec_distances", [True]),
+        ("seed", [0, 11, 2222, 3333, 4444, 5555]),
     ]
 )
 
@@ -86,7 +87,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("DistanceMetric2", cli, _params.generate_params(False)),
+    Experiment("DistanceMetricMasked", cli, _params.generate_params(False)),
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
