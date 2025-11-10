@@ -1,6 +1,7 @@
 # from asyncio.sslproto import add_flowcontrol_defaults
 from email import header
 from logging import warning
+from sf_workingdir_lilly.dmlab.custom_weight_generator import return_weights_for_spec_rad
 import torch
 from torch import Tensor, nn
 import echotorch.nn as echonn
@@ -286,8 +287,8 @@ class FixedESNWithBypassCore(ModelCore):
         self.n_feature = self.Hippo_n_feature
         self.hidden_size = self.n_feature * self.expanded_length
 
-        self.sparsity = 0.2
-        self.spectral_radius = 0.9
+        self.sparsity = getattr(cfg, 'sparsity', 0.2)
+        self.spectral_radius = getattr(cfg, 'spectral_radius', 0.9)
 
         # Create a one-layer RNN with ReLU activation.
         
@@ -438,8 +439,190 @@ class FixedESNWithBypassCore(ModelCore):
                 concat_hidden = new_hidden
             
             return concat_output, concat_hidden
+        
+
+class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
+    def __init__(self, cfg, input_size):
+        """
+        Args:
+            cfg: Configuration object with attributes Hippo_R, Hippo_L, Hippo_n_feature.
+            input_size (int): Dimensionality of the input observation. 
+                              The first Hippo_n_feature dimensions are fed into the fixed RNN,
+                              and the remaining (if any) are passed through as bypass features.
+        """
+        super().__init__(cfg)
+        # Use configuration or defaults.
+        self.R = getattr(cfg, 'Hippo_R', 8)
+        self.L = getattr(cfg, 'Hippo_L', 48)
+        self.Hippo_n_feature = getattr(cfg, 'Hippo_n_feature', 64)
+
+        if input_size < self.Hippo_n_feature:
+            raise Warning(f"Input size {input_size} must be at least Hippo_n_feature ({self.Hippo_n_feature})")
+        self.bypass_size = input_size - self.Hippo_n_feature
+        log.debug(f"bypass size: {self.bypass_size}")
+        # The total register length.
+        self.expanded_length = self.R + self.L - 1  
+        # The flattened hidden state dimension (RNN core output).
+        self.core_output_size = self.Hippo_n_feature * self.expanded_length + self.bypass_size
+        self.n_feature = self.Hippo_n_feature
+        self.hidden_size = self.n_feature * self.expanded_length
+
+        self.sparsity = getattr(cfg, 'sparsity', 0.2)
+        self.spectral_radius = getattr(cfg, 'spectral_radius', 0.9)
+
+        # Create a one-layer RNN with ReLU activation.
+        
+        self.rnn = nn.RNN(input_size=self.n_feature, 
+                          hidden_size=self.hidden_size,
+                          num_layers=1, 
+                          nonlinearity='relu',
+                          batch_first=False,
+                          bias=False)
+        
+        W_ih, W_hh = return_weights_for_spec_rad(self.spectral_radius)
+
+        log.debug(f"weights: { W_ih, W_hh}")
+
+        while W_hh.isnan().any() or W_hh.isinf().any() or W_ih.isnan().any() or W_ih.isinf().any():
+            W_ih, W_hh = self.generate_weights_pytorch_esn()
+            log.debug(f"weights: { W_ih, W_hh}")
+            log.debug("Attention, the weights were Nan or Inf, new weights were generated, the prefixed weights were not used")
+
+        log.debug(f"weights: { W_ih, W_hh}")
+        W_ih = W_ih.detach()
+        W_hh = W_hh.detach()
+
+        # ensure device/dtype match
+        W_ih = W_ih.to(self.rnn.weight_ih_l0.device, dtype=self.rnn.weight_ih_l0.dtype)
+        W_hh = W_hh.to(self.rnn.weight_hh_l0.device, dtype=self.rnn.weight_hh_l0.dtype)
+
+        # Assign the fixed weights and zero out biases.
+        with torch.no_grad():
+            self.rnn.weight_ih_l0.copy_(W_ih)
+            self.rnn.weight_hh_l0.copy_(W_hh)
+            #self.rnn.bias_ih_l0.zero_()  was changed in the initialization of the bias object instead
+            #self.rnn.bias_hh_l0.zero_()
+        
+        # Freeze RNN parameters.
+        for param in self.rnn.parameters():
+            param.requires_grad = False
+
+    def generate_weights_pytorch_esn(self):
+        w_ih = torch.Tensor(self.hidden_size, self.n_feature)
+        w_ih.uniform_(-1, 1)
+        w_hh = torch.Tensor(self.hidden_size * self.hidden_size)
+        w_hh.uniform_(-1, 1)
+
+        # add sparcity to the recurrent matrix
+        if self.sparsity<1:
+            zero_weights = torch.randperm(int(self.hidden_size * self.hidden_size))
+            zero_weights = zero_weights[:int(self.hidden_size * self.hidden_size * (1 - self.sparsity))]
+            w_hh[zero_weights] = 0
+
+        # reshape & scale to the desired spectral radius
+        w_hh = w_hh.view(self.hidden_size, self.hidden_size)
+        abs_eigs = torch.abs(torch.linalg.eigvals(w_hh))
+        w_hh = w_hh * (self.spectral_radius / torch.max(abs_eigs))
+
+        return w_ih, w_hh
+
+    def forward(self, head_output, rnn_states):
+        """
+        Args:
+            head_output: Either a Tensor of shape (B, input_size) or a PackedSequence.
+            rnn_states: Tensor of shape (B, core_output_size) representing the flattened recurrent state.
+        Returns:
+            Tuple (concat_output, new_rnn_states) where:
+              - concat_output is the concatenation of the fixed RNN output and the bypass features.
+              - new_rnn_states is the updated recurrent state.
+        """
+        # Prepare initial hidden state for RNN.
+        # log.info(rnn_states.size())
+        h0 = rnn_states.unsqueeze(0)[:,:, :self.hidden_size].contiguous()
+        
+        
+        if isinstance(head_output, PackedSequence):
+            # For PackedSequence, work on the underlying data.
+            # Split into RNN and bypass parts.
+            rnn_data = head_output.data[:, :self.n_feature]
+            bypass_data = head_output.data[:, self.n_feature:] if self.bypass_size > 0 else None
+
+            # Create a PackedSequence for the RNN input.
+            rnn_packed = PackedSequence(rnn_data,
+                                        head_output.batch_sizes,
+                                        head_output.sorted_indices,
+                                        head_output.unsorted_indices)
+            # Run the RNN.
+            rnn_output_packed, new_hidden = self.rnn(rnn_packed, h0)
+            new_hidden = new_hidden.squeeze(0)  # shape: (B, core_output_size)
+            
+            # If bypass features exist, concatenate them.
+            if bypass_data is not None:
+                # Concatenate along the feature dimension.
+                concatenated_data = torch.cat([rnn_output_packed.data, bypass_data], dim=1)
+
+                bypass_data_packed = PackedSequence(bypass_data,
+                                        head_output.batch_sizes,
+                                        head_output.sorted_indices,
+                                        head_output.unsorted_indices)
+                # Assume 'packed' is your PackedSequence and you used batch_first=True when packing.
+                padded, lengths = pad_packed_sequence(bypass_data_packed, batch_first=True)
+
+                # For each sequence in the batch, pick the last valid time step.
+                # lengths is a tensor of the original sequence lengths.
+                last_inputs = padded[torch.arange(padded.size(0)), lengths - 1, :]
+                concatenated_data_hidden = torch.cat([new_hidden.data, last_inputs], dim=1)
+
+                # # Compute indices in the packed data that correspond to the last time step of each sequence.
+                # last_indices = head_output.batch_sizes.cumsum(0) - 1
+
+                # # Use these indices to index into the bypass_data tensor.
+                # last_bypass = bypass_data[last_indices,:]
+
+                # # If the sequences were originally unsorted, restore the original order:
+                # last_bypass = last_bypass[head_output.unsorted_indices,:]
+                # concatenated_data_hidden = torch.cat([new_hidden.data, last_bypass], dim=1)
+
+            else:
+                concatenated_data = rnn_output_packed.data
+                concatenated_data_hidden = new_hidden.data
+
+            # Build a new PackedSequence with the concatenated data.
+            concat_output = PackedSequence(concatenated_data,
+                                           rnn_output_packed.batch_sizes,
+                                           rnn_output_packed.sorted_indices,
+                                           rnn_output_packed.unsorted_indices)
+            
+            concat_hidden = PackedSequence(concatenated_data_hidden,
+                                           rnn_output_packed.batch_sizes,
+                                           rnn_output_packed.sorted_indices,
+                                           rnn_output_packed.unsorted_indices)
+            return concat_output, concat_hidden
+        else:
+            # For Tensor input.
+            # Split the input into RNN and bypass parts.
+            rnn_input = head_output[:, :self.n_feature]  # shape: (B, n_feature)
+            bypass_output = head_output[:, self.n_feature:] if self.bypass_size > 0 else None
+            
+            # Add sequence dimension for the RNN.
+            rnn_input = rnn_input.unsqueeze(0)  # shape: (1, B, n_feature)
+            rnn_output, new_hidden = self.rnn(rnn_input, h0)
+            new_hidden = new_hidden.squeeze(0)   # shape: (B, core_output_size)
+            rnn_output = rnn_output.squeeze(0)     # shape: (B, core_output_size)
+            
+            # Concatenate the RNN output with bypass features.
+            if bypass_output is not None:
+                concat_output = torch.cat([rnn_output, bypass_output], dim=1)
+                concat_hidden = torch.cat([new_hidden, bypass_output], dim=1)
+            else:
+                concat_output = rnn_output
+
+                concat_hidden = new_hidden
+            
+            return concat_output, concat_hidden
 
 
+# does not work atm
 class FixedESNWithBypassCoreEchoTorchWeights(ModelCore):
     def __init__(self, cfg, input_size):
         """
@@ -1741,6 +1924,8 @@ def make_hipposlam_core(cfg: Config, core_input_size: int) -> ModelCore:
             core = FixedESNWithBypassCore(cfg, core_input_size)
         elif cfg.core_name=='BypassFixedESNEchoTorchWeights':
             core = FixedESNWithBypassCoreEchoTorchWeights(cfg, core_input_size)
+        elif cfg.core_name =='BypassFixedESNPreGeneratedWeights':
+            core = FixedESNWithBypassCorePreGeneratedWeights(cfg, core_input_size)
     else:
         core = ModelCoreIdentity(cfg, core_input_size)
 
