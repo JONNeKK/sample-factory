@@ -469,6 +469,7 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
 
         self.sparsity = getattr(cfg, 'sparsity', 0.2)
         self.spectral_radius = getattr(cfg, 'spectral_radius', 0.9)
+        self.trial = getattr(cfg, 'weight_trial', 1)
 
         # Create a one-layer RNN with ReLU activation.
         
@@ -479,7 +480,7 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
                           batch_first=False,
                           bias=False)
         
-        W_ih, W_hh = return_weights_for_spec_rad(self.spectral_radius)
+        W_ih, W_hh = return_weights_for_spec_rad(self.spectral_radius, trial=self.trial)
 
         log.debug(f"weights: { W_ih, W_hh}")
 

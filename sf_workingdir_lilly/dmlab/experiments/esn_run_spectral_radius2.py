@@ -73,11 +73,11 @@ cli = (
     "--rnn_size=1149 "
     "--spectral_radius=0.9 "
     "--sparsity=0.2 "
-    "--weight_trial=1 " # TODO
+    "--weight_trial=2 "  # TODO
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_lilly_esn_spectral_radius_TEST4 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_lilly_esn_spectral_radius_TEST3 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -91,7 +91,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNSpectralRadius4", cli, _params.generate_params(False)),  # TODO
+    Experiment("ESNSpectralRadius3", cli, _params.generate_params(False)),
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
@@ -104,3 +104,5 @@ RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
 # python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir.dmlab.experiments.distance_metric_run --slurm_partition=genoa --slurm_timeout=30:05:00
 
 # python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_spectral_radius --slurm_partition=genoa --slurm_timeout=30:05:00
+
+# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_spectral_radius2 --slurm_partition=genoa --slurm_timeout=30:05:00

@@ -24,8 +24,8 @@ def generate_weights_pytorch_esn(hidden_size, n_feature, sparsity, spectral_radi
         return w_ih, w_hh
 
 
-def return_weights_for_spec_rad(spectral_radius):
-    path = Path("/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights")
+def return_weights_for_spec_rad(spectral_radius, trial=1):
+    path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights{trial}")
     path.mkdir(parents=True, exist_ok=True)
     file_wih = path / f"W_ih_{spectral_radius}"
     file_whh = path / f"W_hh_with_{spectral_radius}"
@@ -34,9 +34,11 @@ def return_weights_for_spec_rad(spectral_radius):
     return w_ih, w_hh
 
 
-def save_generated_weights(w_ih, w_hh, spectral_radius):
-    path = Path("/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights")
+
+def generate_new_weights(hidden_size, Hippo_n_feature,sparsity, spectral_radius, trial):
+    path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights{trial}")
     path.mkdir(parents=True, exist_ok=True)
+    w_ih, w_hh = generate_weights_pytorch_esn(hidden_size, Hippo_n_feature,sparsity, spectral_radius)
     file_wih = path / f"W_ih_{spectral_radius}"
     file_whh = path / f"W_hh_with_{spectral_radius}"
     torch.save(w_ih, file_wih)
@@ -49,18 +51,15 @@ def main():
     Hippo_L = 64 
     Hippo_R = 8
     sparsity = 0.2
-    spectral_radius = 0.99
+    spectral_radius = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.92, 0.95, 0.97, 0.99]
     
     expanded_length = Hippo_R + Hippo_L - 1
     hidden_size = Hippo_n_feature * expanded_length
 
-    wih, whh = generate_weights_pytorch_esn(hidden_size, Hippo_n_feature,sparsity, spectral_radius)
-    print(wih, whh)
-    print(wih.size(), whh.size())
+    for sr in spectral_radius:
+        generate_new_weights(hidden_size, Hippo_n_feature, sparsity, sr, trial=2)
 
-    save_generated_weights(wih, whh, spectral_radius)
-
-    w_ih, w_hh = return_weights_for_spec_rad(spectral_radius)
+    w_ih, w_hh = return_weights_for_spec_rad(0.99, trial=2)
     print(w_ih, w_hh)
     print(w_ih.size(), w_hh.size())
 
