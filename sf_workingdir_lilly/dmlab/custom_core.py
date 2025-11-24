@@ -1,7 +1,7 @@
 # from asyncio.sslproto import add_flowcontrol_defaults
 from email import header
 from logging import warning
-from sf_workingdir_lilly.dmlab.custom_weight_generator import return_weights_for_spec_rad
+from sf_workingdir_lilly.dmlab.custom_weight_generator import return_weights_for_iso_feat, return_weights_for_spec_rad
 import torch
 from torch import Tensor, nn
 import echotorch.nn as echonn
@@ -470,6 +470,10 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
         self.sparsity = getattr(cfg, 'sparsity', 0.2)
         self.spectral_radius = getattr(cfg, 'spectral_radius', 0.9)
         self.trial = getattr(cfg, 'weight_trial', 1)
+        self.isolated_features = (cfg, 'isolated_features', False)
+
+        self.fixed_wih = False
+        self.fixed_whh = (cfg, 'fixed_whh', False)
 
         # Create a one-layer RNN with ReLU activation.
         
@@ -480,7 +484,10 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
                           batch_first=False,
                           bias=False)
         
-        W_ih, W_hh = return_weights_for_spec_rad(self.spectral_radius, trial=self.trial)
+        if self.isolated_features:
+            W_ih, W_hh = return_weights_for_iso_feat(self.spectral_radius, trial=self.trial, fixed_whh=self.fixed_whh, fixed_wih=self.fixed_wih)
+        else:
+            W_ih, W_hh = return_weights_for_spec_rad(self.spectral_radius, trial=self.trial)
 
         log.debug(f"weights: { W_ih, W_hh}")
 
