@@ -253,6 +253,27 @@ def get_orth_to_basis_vecotr(basis_vectors, dim):
         return torch.zeros(dim)
     else:
         return v_rand / norm_v_rand
+    
+
+def len_new_orth_vec(hs, time_steps) -> np.ndarray:
+    """
+    return: orthogonal component at every time step, of all previous hidden states (time steps, hidden size)
+    hs: (time steps, hidden size)
+    """
+    hs = torch.transpose(hs, 0, 1)  # (time steps, hidden size) -> (hidden size, time steps)
+    subspace=hs[:,[0]]
+    ortho_components = []
+    for i in range(1, time_steps):
+        current_hidden = hs[:,i]
+        current_hidden = current_hidden/torch.norm(current_hidden)
+        proj = subspace @ torch.pinverse(subspace) @ current_hidden
+        ortho_component = current_hidden - proj
+        ortho_components.append(ortho_component)
+        ortho_component_norm = ortho_component/torch.norm(ortho_component)
+        subspace = torch.cat((subspace, ortho_component_norm.unsqueeze(-1)), dim=1) if ortho_component.norm()>1e-10 else subspace
+    ortho_components = np.array(ortho_components) 
+    return np.linalg.norm(ortho_components, axis=1)
+
 
 def get_orthogonal_vector(v1, v2):
     '''
@@ -297,15 +318,6 @@ def main():
 
     #hs = torch.Tensor([[1,2,3,4,5],[6,7,8,9,0]])
     
-    angles = compute_angle_between_hidden_states(hs, 70)
-
-    angles = compute_angle_plane_hidden_state(hs, 70)
-
-    #print(get_orthogonal_vector(torch.Tensor([1,0,0]), torch.Tensor([1,1,0])))
-    #td = esn_pca(hs)
-    #print(td)
-
-    # visualize_pca_results(td)
 
 if __name__ == "__main__":
     main()

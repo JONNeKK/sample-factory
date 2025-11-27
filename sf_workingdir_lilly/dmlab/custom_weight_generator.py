@@ -80,7 +80,7 @@ def return_weights_for_iso_feat(spectral_radius, trial=1, fixed_whh=False, fixed
         else:
             path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights_iso_feat_fixed_whh{trial}")
     elif fixed_whh and fixed_wih:
-        path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights_iso_feat_fixed_whh_wih{trial}")
+        path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/weights/custom_weights_iso_feat_fixed_whh_wih{trial}")
     else:
         path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights_iso_feat{trial}")
     
@@ -112,7 +112,7 @@ def generate_new_isolated_weights(expanded_length, hidden_size, Hippo_n_feature,
             path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights_iso_feat_fixed_whh{trial}")
     elif fixed_whh and fixed_wih:
         w_ih, w_hh = generate_weights_isolated_features_fixed_whh_wih(expanded_length, hidden_size, Hippo_n_feature,sparsity, spectral_radius)
-        path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights_iso_feat_fixed_whh_wih{trial}")
+        path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/weights/custom_weights_iso_feat_fixed_whh_wih{trial}")
     else:
         w_ih, w_hh = generate_weights_isolated_features(expanded_length, hidden_size, Hippo_n_feature,sparsity, spectral_radius)
         path = Path(f"/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/custom_weights_iso_feat{trial}")
@@ -130,19 +130,19 @@ def main():
     Hippo_R = 8
     sparsity = 0.2 #[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     spectral_radius = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
-    trial=6
+    trial=2
     fixed_whh=True
-    fixed_wih=False
+    fixed_wih=True
     vary_sparsity=False
     
     expanded_length = Hippo_R + Hippo_L - 1
     hidden_size = Hippo_n_feature * expanded_length
 
-    
-    for sr in spectral_radius:
-     #   generate_new_weights(hidden_size, Hippo_n_feature, sparsity, sr, trial=2)
-        #for sparse in sparsity:
-        generate_new_isolated_weights(expanded_length, hidden_size, Hippo_n_feature,sparsity, sr, trial=trial, fixed_whh=fixed_whh, fixed_wih=fixed_wih, vary_sparsity=vary_sparsity)
+    for t in range(50):
+        for sr in spectral_radius:
+        #   generate_new_weights(hidden_size, Hippo_n_feature, sparsity, sr, trial=2)
+            #for sparse in sparsity:
+            generate_new_isolated_weights(expanded_length, hidden_size, Hippo_n_feature,sparsity, sr, trial=t, fixed_whh=fixed_whh, fixed_wih=fixed_wih, vary_sparsity=vary_sparsity)
 
     #w_ih, w_hh = return_weights_for_iso_feat(0.3, trial=1, fixed_whh=True, fixed_wih=False)
     #print(w_ih, w_hh)
