@@ -310,6 +310,18 @@ def get_orthogonal_vector(v1, v2):
     return v_orth/v_orth_norm
 
 
+def get_time_of_threshold_crossing(len_ortho_vec, threshold=0.1):
+    """
+    len_ortho_vec: (trials, Hippo_n_feature, time_steps-1)
+    return: time step for each trial at which the length of the orthogonal vector crossed the threshold
+    """
+    thresh_crossed = np.zeros(len_ortho_vec.shape[0])
+    for t in range(len_ortho_vec.shape[0]):
+        thresh_crossed[t] = np.where(len_ortho_vec[t,0,:] < threshold)[0][0]
+    return thresh_crossed
+        
+
+
 
 def main():
     spectral_radius = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.92, 0.95, 0.97, 0.99]
@@ -317,6 +329,10 @@ def main():
     hs = get_hidden_states_iso_feat(70, 0.5, 16, 8, 64, trial=1, fixed_whh=True)  
 
     #hs = torch.Tensor([[1,2,3,4,5],[6,7,8,9,0]])
+    len_orth_vec = np.array([[[1, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05]], [[1, 0.8, 0.6, 0.4, 0.1, 0.09, 0.05]], [[1, 0.8, 0.6, 0.1, 0.02, 0.01, 0.005]]])
+    #print(len_orth_vec.shape)
+    thresh_crossed = get_time_of_threshold_crossing(len_orth_vec)
+    print(thresh_crossed)
     
 
 if __name__ == "__main__":

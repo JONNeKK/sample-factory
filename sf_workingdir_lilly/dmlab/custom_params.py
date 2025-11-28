@@ -33,7 +33,7 @@ def add_hipposlam_env_args(parser: argparse.ArgumentParser) -> None:
     p.add_argument("--sparsity", default=0.2, type=float, help="level of sparsity in the recurrent weight matrix")
     p.add_argument("--weight_trial", default=1, type=int, help="determines which prefixed weights to use")
     p.add_argument("--isolated_features", default=False, type=bool, help="determines which prefixed weights to use")
-    #p.add_argument("--fixed_wih", default=False, type=bool, help="determines whether the input weight matrix is the same for all features")
+    p.add_argument("--fixed_wih", default=False, type=bool, help="determines whether the input weight matrix is the same for all features")
     p.add_argument("--fixed_whh", default=False, type=bool, help="determines whether the recurrent weight matrix is the same for all features")
 
     p.add_argument("--simple_sequence", default=False, type=bool, help="simple sequence, simply shrinking feature dimensions and expanding features to include their history")
