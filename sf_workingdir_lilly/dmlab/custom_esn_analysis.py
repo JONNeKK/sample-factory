@@ -55,10 +55,10 @@ def get_hidden_states(time_steps, spectral_radius, Hippo_n_feature, Hippo_R, Hip
     # return output vector
     return output
 
-def get_hidden_states_iso_feat(time_steps, spectral_radius, Hippo_n_feature, Hippo_R, Hippo_L, trial=1, fixed_whh=False, fixed_wih=False, input_idx=0, sparsity=0.2):
+def get_hidden_states_iso_feat(time_steps, spectral_radius, Hippo_n_feature, Hippo_R, Hippo_L, trial=1, fixed_whh=False, fixed_wih=False, input_idx=0, sparsity=0.2, weights_folder='weights'):
 
     # create the rnn
-    W_ih, W_hh = return_weights_for_iso_feat(spectral_radius, trial, fixed_whh, fixed_wih)
+    W_ih, W_hh = return_weights_for_iso_feat(spectral_radius, trial, fixed_whh, fixed_wih, folder=weights_folder)
 
     expanded_length = Hippo_R + Hippo_L - 1
     hidden_size = Hippo_n_feature * expanded_length
@@ -274,6 +274,25 @@ def len_new_orth_vec(hs, time_steps) -> np.ndarray:
     ortho_components = np.array(ortho_components) 
     return np.linalg.norm(ortho_components, axis=1)
 
+def len_new_orth_vec_new_not_norm(hs, time_steps) -> np.ndarray:
+    """
+    return: orthogonal component at every time step, of all previous hidden states (time steps, hidden size)
+    hs: (time steps, hidden size)
+    """
+    hs = torch.transpose(hs, 0, 1)  # (time steps, hidden size) -> (hidden size, time steps)
+    subspace=hs[:,[0]]
+    ortho_components = []
+    for i in range(1, time_steps):
+        current_hidden = hs[:,i]
+        # current_hidden = current_hidden/torch.norm(current_hidden)
+        proj = subspace @ torch.pinverse(subspace) @ current_hidden
+        ortho_component = current_hidden - proj
+        ortho_components.append(ortho_component)
+        ortho_component_norm = ortho_component/torch.norm(ortho_component)
+        subspace = torch.cat((subspace, ortho_component_norm.unsqueeze(-1)), dim=1) if ortho_component.norm()>1e-10 else subspace
+    ortho_components = np.array(ortho_components) 
+    return np.linalg.norm(ortho_components, axis=1)
+
 
 def get_orthogonal_vector(v1, v2):
     '''
@@ -320,6 +339,15 @@ def get_time_of_threshold_crossing(len_ortho_vec, threshold=0.1):
         thresh_crossed[t] = np.where(len_ortho_vec[t,0,:] < threshold)[0][0]
     return thresh_crossed
         
+def exp_func(x, a, tau):
+    return a * np.exp(-x / tau)
+
+
+def stable_trials(norms):
+    """
+    norms: (trials, time_steps)
+    """
+    return np.where(norms[:, -1] < 1)[0]
 
 
 
@@ -329,10 +357,10 @@ def main():
     hs = get_hidden_states_iso_feat(70, 0.5, 16, 8, 64, trial=1, fixed_whh=True)  
 
     #hs = torch.Tensor([[1,2,3,4,5],[6,7,8,9,0]])
-    len_orth_vec = np.array([[[1, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05]], [[1, 0.8, 0.6, 0.4, 0.1, 0.09, 0.05]], [[1, 0.8, 0.6, 0.1, 0.02, 0.01, 0.005]]])
+    len_orth_vec = np.array([[1, 0.8, 0.6, 0.4, 0.2, 0.1, 0.1], [1, 0.8, 0.6, 0.4, 0.1, 0.09, 0.00005], [1, 0.8, 0.6, 0.1, 0.02, 0.01, 0.005]])
     #print(len_orth_vec.shape)
-    thresh_crossed = get_time_of_threshold_crossing(len_orth_vec)
-    print(thresh_crossed)
+    idx_stable_trials = stable_trials(len_orth_vec)
+    print(idx_stable_trials)
     
 
 if __name__ == "__main__":

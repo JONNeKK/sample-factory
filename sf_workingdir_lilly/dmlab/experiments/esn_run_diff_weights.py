@@ -72,7 +72,7 @@ cli = (
     "--Hippo_L=64 "
     "--Hippo_R=8 "
     "--rnn_size=1149 "
-    "--spectral_radius=1.4 "
+    "--spectral_radius=1.4 "  # TODO
     "--sparsity=0.2 "
     "--weight_trial=6 " # TODO
     "--isolated_features=True " # TODO
@@ -81,7 +81,7 @@ cli = (
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_esn_different_weights_16 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_esn_different_weights_17 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -95,7 +95,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNDifferentWeightsIsolatedFeatures16", cli, _params.generate_params(False)),  # TODO
+    Experiment("ESNDifferentWeightsIsolatedFeatures17", cli, _params.generate_params(False)),  # TODO
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)

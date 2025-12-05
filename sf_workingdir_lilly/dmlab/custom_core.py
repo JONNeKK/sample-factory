@@ -470,9 +470,10 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
         self.sparsity = getattr(cfg, 'sparsity', 0.2)
         self.spectral_radius = getattr(cfg, 'spectral_radius', 0.9)
         self.trial = getattr(cfg, 'weight_trial', 1)
+        self.weight_folder = getattr(cfg, 'weight_folder', 'weights')
         self.isolated_features = (cfg, 'isolated_features', False)
 
-        self.fixed_wih = False
+        self.fixed_wih = (cfg, 'fixed_wih', False)
         self.fixed_whh = (cfg, 'fixed_whh', False)
 
         # Create a one-layer RNN with ReLU activation.
@@ -485,7 +486,7 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
                           bias=False)
         
         if self.isolated_features:
-            W_ih, W_hh = return_weights_for_iso_feat(self.spectral_radius, trial=self.trial, fixed_whh=self.fixed_whh, fixed_wih=self.fixed_wih)
+            W_ih, W_hh = return_weights_for_iso_feat(self.spectral_radius, trial=self.trial, fixed_whh=self.fixed_whh, fixed_wih=self.fixed_wih, folder=self.weight_folder)
         else:
             W_ih, W_hh = return_weights_for_spec_rad(self.spectral_radius, trial=self.trial)
 
@@ -496,7 +497,7 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
             log.debug(f"weights: { W_ih, W_hh}")
             log.debug("Attention, the weights were Nan or Inf, new weights were generated, the prefixed weights were not used")
 
-        log.debug(f"weights: { W_ih, W_hh}")
+        #log.debug(f"weights: { W_ih, W_hh}")
         W_ih = W_ih.detach()
         W_hh = W_hh.detach()
 
@@ -514,6 +515,8 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
         # Freeze RNN parameters.
         for param in self.rnn.parameters():
             param.requires_grad = False
+
+         # initialize low rank adaptation
 
     def generate_weights_pytorch_esn(self):
         w_ih = torch.Tensor(self.hidden_size, self.n_feature)
