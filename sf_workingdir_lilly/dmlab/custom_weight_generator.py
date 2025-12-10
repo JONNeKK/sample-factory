@@ -3,7 +3,6 @@ from torch import Tensor, nn
 from pathlib import Path
 
 
-
 def generate_weights_pytorch_esn(hidden_size, n_feature, sparsity, spectral_radius):
         w_ih = torch.Tensor(hidden_size, n_feature)
         w_ih.uniform_(-1, 1)
@@ -126,10 +125,10 @@ def generate_new_isolated_weights(expanded_length, hidden_size, Hippo_n_feature,
 
 def main():
     Hippo_n_feature = 16
-    Hippo_L = 64 
-    Hippo_R = 16
+    Hippo_L = 16
+    Hippo_R = 8
     sparsity = 0.2 #[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    spectral_radius = [0.5, 0.7, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+    spectral_radius = [0.3, 0.5, 0.7, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
     trial=1
     fixed_whh=True
     fixed_wih=True

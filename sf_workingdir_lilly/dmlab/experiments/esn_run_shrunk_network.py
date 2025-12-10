@@ -81,7 +81,7 @@ cli = (
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_esn_shrunk_23 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_esn_shrunk_24 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -95,7 +95,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNShrunk23", cli, _params.generate_params(False)),  # TODO
+    Experiment("ESNShrunk24", cli, _params.generate_params(False)),  # TODO
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
