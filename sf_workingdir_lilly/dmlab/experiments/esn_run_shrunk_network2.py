@@ -23,8 +23,8 @@ cli = (
     #"--value_loss_coeff=0.3 "
     #"--ppo_clip_ratio=0.25 "
     "--num_workers=32 "
-    "--num_envs_per_worker=2 " # TODO 8
-    "--worker_num_splits=2 "  # TODO 8
+    "--num_envs_per_worker=2 "
+    "--worker_num_splits=2 "
     "--num_epochs=1 "
     "--rollout=64 "
     "--recurrence=64 "
@@ -55,7 +55,7 @@ cli = (
     "--save_milestones_sec=4000 "
     #"--save_best_every_sec=30 "
     "--decoder_mlp_layers 128 128 "
-    "--env_frameskip=8 "  # TODO change to 4
+    "--env_frameskip=4 "  # TODO change to 4
     "--core_name=BypassFixedESNPreGeneratedWeights "
     "--DG_name=batchnorm_relu "  #TODO linear_relu
     "--DG_BN_intercept=2.43 "
@@ -81,7 +81,7 @@ cli = (
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_esn_shrunk_25 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_esn_shrunk_26 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -95,7 +95,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNShrunk25", cli, _params.generate_params(False)),  # TODO
+    Experiment("ESNShrunk26", cli, _params.generate_params(False)),  # TODO
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
@@ -107,4 +107,4 @@ RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
 
 # python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir.dmlab.experiments.distance_metric_run --slurm_partition=genoa --slurm_timeout=30:05:00
 
-# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_shrunk_network --slurm_partition=genoa --slurm_timeout=30:05:00
+# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_shrunk_network2 --slurm_partition=genoa --slurm_timeout=30:05:00

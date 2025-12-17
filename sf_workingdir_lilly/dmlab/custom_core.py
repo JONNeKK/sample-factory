@@ -2066,6 +2066,8 @@ def make_hipposlam_core(cfg: Config, core_input_size: int) -> ModelCore:
             core = FixedESNWithBypassCoreEchoTorchWeights(cfg, core_input_size)
         elif cfg.core_name =='BypassFixedESNPreGeneratedWeights':
             core = FixedESNWithBypassCorePreGeneratedWeights(cfg, core_input_size)
+        elif cfg.core_name =='BypassFixedESNPreGeneratedWeightsLORA':
+            core = FixedESNWithBypassCorePreGeneratedWeightsLORA(cfg, core_input_size)
     else:
         core = ModelCoreIdentity(cfg, core_input_size)
 

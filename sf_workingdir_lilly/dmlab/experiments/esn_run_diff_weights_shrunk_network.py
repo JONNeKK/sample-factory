@@ -4,7 +4,8 @@ from sample_factory.launcher.run_description import Experiment, ParamGrid, RunDe
 _params = ParamGrid(
     [
         ("seed",[1111,2222,3333]),
-        ("spectral_radius",[0.5, 0.7, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]) # TODO
+        #("spectral_radius",[0.5, 0.7, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]) # TODO
+        ("weight_trial", [ 1,  3,  4,  5 , 7 , 8 , 9 ,10 ,11 ,17, 18, 22, 24, 25, 27, 30, 32 ,33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46 ,48, 49])
     ]
 )
 
@@ -23,8 +24,8 @@ cli = (
     #"--value_loss_coeff=0.3 "
     #"--ppo_clip_ratio=0.25 "
     "--num_workers=32 "
-    "--num_envs_per_worker=2 " # TODO 8
-    "--worker_num_splits=2 "  # TODO 8
+    "--num_envs_per_worker=2 "
+    "--worker_num_splits=2 "
     "--num_epochs=1 "
     "--rollout=64 "
     "--recurrence=64 "
@@ -53,7 +54,7 @@ cli = (
     "--keep_checkpoints=10 "
     "--save_every_sec=120 "
     "--save_milestones_sec=4000 "
-    #"--save_best_every_sec=30 "
+    #"--save_best_every_sec=30 "  #TODO 600
     "--decoder_mlp_layers 128 128 "
     "--env_frameskip=8 "  # TODO change to 4
     "--core_name=BypassFixedESNPreGeneratedWeights "
@@ -74,14 +75,14 @@ cli = (
     "--spectral_radius=1.4 "  # TODO
     "--sparsity=0.2 "
     "--weight_trial=1 " # TODO
-    "--weight_folder=weights_shrunk_esn " # TODO
+    "--weight_folder=weights_shrunk_esn_sr1.4 " # TODO
     "--isolated_features=True " # TODO
     "--fixed_whh=True " # TODO
     "--fixed_wih=True " # TODO
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_esn_shrunk_25 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_esn_shrunk_27 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -95,7 +96,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNShrunk25", cli, _params.generate_params(False)),  # TODO
+    Experiment("ESNShrunk27", cli, _params.generate_params(False)),  # TODO
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
@@ -107,4 +108,4 @@ RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
 
 # python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir.dmlab.experiments.distance_metric_run --slurm_partition=genoa --slurm_timeout=30:05:00
 
-# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_shrunk_network --slurm_partition=genoa --slurm_timeout=30:05:00
+# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_diff_weights_shrunk_network --slurm_partition=genoa --slurm_timeout=30:05:00

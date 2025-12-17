@@ -9,183 +9,87 @@ from torch.nn import RNNBase
 from torch.nn.parameter import Parameter
 from torch.nn.utils.rnn import PackedSequence
 
+from sample_factory.utils.utils import log
+
 
 class CustomRNN(RNNBase):
-    __constants__ = [
-        "mode",
-        "input_size",
-        "hidden_size",
-        "num_layers",
-        "bias",
-        "batch_first",
-        "dropout",
-        "bidirectional",
-        "proj_size",
-    ]
-    __jit_unused_properties__ = ["all_weights"]
-
-    mode: str
-    input_size: int
-    hidden_size: int
-    num_layers: int
-    bias: bool
-    batch_first: bool
-    dropout: float
-    bidirectional: bool
-    proj_size: int
-
-    ''' not sure if you can replace the constructor like this
+   
+    @overload
     def __init__(
         self,
-        mode: str,
         input_size: int,
         hidden_size: int,
-        num_layers: int = 1,
-        bias: bool = True,
-        batch_first: bool = False,
-        dropout: float = 0.0,
-        bidirectional: bool = False,
-        proj_size: int = 0,
-        device=None,
-        dtype=None,
-    ) -> None:
-    '''
-    def __init__(
-        self,
-        mode: str,
-        input_size: int,
-        hidden_size: int,
-        rank = 1,
         num_layers: int = 1,
         nonlinearity: str = "tanh",
+        rank = 1,  # added the rank to allow low-rank adaptations
         bias: bool = True,
         batch_first: bool = False,
         dropout: float = 0.0,
         bidirectional: bool = False,
-        proj_size: int = 0,
         device=None,
         dtype=None,
-    ) -> None:
-        factory_kwargs = {"device": device, "dtype": dtype}
-        super().__init__()
-        self.mode = mode
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.rank = rank
-        self.num_layers = num_layers
-        self.bias = bias
-        self.batch_first = batch_first
-        self.dropout = float(dropout)
-        self.bidirectional = bidirectional
-        self.proj_size = proj_size
-        self._flat_weight_refs: list[Optional[weakref.ReferenceType[Parameter]]] = []
-        num_directions = 2 if bidirectional else 1
+    ) -> None: ...
 
-        if (
-            not isinstance(dropout, numbers.Number)
-            or not 0 <= dropout <= 1
-            or isinstance(dropout, bool)
-        ):
+    @overload
+    def __init__(self, *args, **kwargs) -> None: ...
+
+    def __init__(self, *args, **kwargs):
+        if "proj_size" in kwargs:
             raise ValueError(
-                "dropout should be a number in range [0, 1] "
-                "representing the probability of an element being "
-                "zeroed"
+                "proj_size argument is only supported for LSTM, not RNN or GRU"
             )
-        if dropout > 0 and num_layers == 1:
-            warnings.warn(
-                "dropout option adds dropout after all but last "
-                "recurrent layer, so non-zero dropout expects "
-                f"num_layers greater than 1, but got dropout={dropout} and "
-                f"num_layers={num_layers}"
-            )
-
-        if not isinstance(hidden_size, int):
-            raise TypeError(
-                f"hidden_size should be of type int, got: {type(hidden_size).__name__}"
-            )
-        if hidden_size <= 0:
-            raise ValueError("hidden_size must be greater than zero")
-        if num_layers <= 0:
-            raise ValueError("num_layers must be greater than zero")
-        if proj_size < 0:
-            raise ValueError(
-                "proj_size should be a positive integer or zero to disable projections"
-            )
-        if proj_size >= hidden_size:
-            raise ValueError("proj_size has to be smaller than hidden_size")
-
-        if mode == "LSTM":
-            gate_size = 4 * hidden_size
-        elif mode == "GRU":
-            gate_size = 3 * hidden_size
-        elif mode == "RNN_TANH":
-            gate_size = hidden_size
-        elif mode == "RNN_RELU":
-            gate_size = hidden_size
+        if len(args) > 1:
+            self.hidden_size = args[1]
         else:
-            raise ValueError("Unrecognized RNN mode: " + mode)
+            self.hidden_size = kwargs.get("hidden_size", 0)
+        if len(args) > 3:
+            self.nonlinearity = args[3]
+            self.rank = args[4] 
+            args = args[:3] + args[4:]
+        else:
+            self.nonlinearity = kwargs.pop("nonlinearity", "tanh")
+        if len(args) > 4:
+            self.rank = args[4]
+            args = args[:3] + args[4:]
+        else:
+            self.rank = kwargs.pop("rank", 1)
+        if self.nonlinearity == "tanh":
+            mode = "RNN_TANH"
+        elif self.nonlinearity == "relu":
+            mode = "RNN_RELU"
+        else:
+            raise ValueError(
+                f"Unknown nonlinearity '{self.nonlinearity}'. Select from 'tanh' or 'relu'."
+            )
+        
+        if len(args) > 9:
+            self.device = args[9]
+        else:
+            self.device = kwargs.get("device", None)
+        if len(args) > 10:
+            self.dtype = args[10]
+        else:
+            self.dtype = kwargs.get("dtype", None)
+        factory_kwargs = {"device": self.device, "dtype": self.dtype}
 
-        self._flat_weights_names = []
-        self._all_weights = []
-        for layer in range(num_layers):
-            for direction in range(num_directions):
-                real_hidden_size = proj_size if proj_size > 0 else hidden_size
-                layer_input_size = (
-                    input_size if layer == 0 else real_hidden_size * num_directions
-                )
+        #for layer in range(self.num_layers):
+            #for direction in range(num_directions):
 
-                w_ih = Parameter(
-                    torch.empty((gate_size, layer_input_size), **factory_kwargs)
-                )
-                w_hh = Parameter(
-                    torch.empty((gate_size, real_hidden_size), **factory_kwargs)
-                )
 
-                # change the rnn constructor to include low rank adaptation  #Idee: mach das zum parameter aber nicht teil der offiziellen liste, damit es trainiert wird aber nicht an den c code übergeben wird
-                # B
-                self.lr_column = Parameter(
-                    torch.empty((real_hidden_size, rank), **factory_kwargs)
-                )
-                # A
-                self.lr_row = Parameter(
-                    torch.empty((rank, real_hidden_size), **factory_kwargs)
-                )
+        super().__init__(mode, *args, **kwargs)
 
-                b_ih = Parameter(torch.empty(gate_size, **factory_kwargs))
-                # Second bias vector included for CuDNN compatibility. Only one
-                # bias vector is needed in standard definition.
-                b_hh = Parameter(torch.empty(gate_size, **factory_kwargs))
-                layer_params: tuple[Tensor, ...] = ()
-                if self.proj_size == 0:
-                    if bias:
-                        layer_params = (w_ih, w_hh, b_ih, b_hh)
-                    else:
-                        layer_params = (w_ih, w_hh)
-                else:
-                    w_hr = Parameter(
-                        torch.empty((proj_size, hidden_size), **factory_kwargs)
-                    )
-                    if bias:
-                        layer_params = (w_ih, w_hh, b_ih, b_hh, w_hr)
-                    else:
-                        layer_params = (w_ih, w_hh, w_hr)
-
-                suffix = "_reverse" if direction == 1 else ""
-                param_names = ["weight_ih_l{}{}", "weight_hh_l{}{}"] 
-                if bias:
-                    param_names += ["bias_ih_l{}{}", "bias_hh_l{}{}"]
-                if self.proj_size > 0:
-                    param_names += ["weight_hr_l{}{}"]
-                param_names = [x.format(layer, suffix) for x in param_names]
-
-                for name, param in zip(param_names, layer_params):
-                    setattr(self, name, param)
-                self._flat_weights_names.extend(param_names)  
-                self._all_weights.append(param_names)
-
-        self._init_flat_weights()
+        # change the rnn constructor to include low rank adaptation  #Idee: mach das zum parameter aber nicht teil der offiziellen liste, damit es trainiert wird aber nicht an den c code übergeben wird
+        # B
+        self.lr_column = Parameter(
+            torch.empty((self.hidden_size, self.rank), **factory_kwargs)
+        )
+        # A
+        self.lr_row = Parameter(
+            torch.empty((self.rank, self.hidden_size), **factory_kwargs)
+        )
 
         self.reset_parameters()
+
 
 
     def update_weights():
@@ -221,7 +125,9 @@ class CustomRNN(RNNBase):
         # add low-rank adaptation to the recurrent weights
         idx = self._flat_weights_names.index("weight_hh_l0")
         W_hh_base = self._flat_weights[idx]
+        log.debug(f"current low rank components: {self.lr_column, self.lr_row}")  #TODO wegmachen
         new_W_hh = W_hh_base + self.lr_column @ self.lr_row
+        log.debug(f"whh with low rank components: {new_W_hh}")
         self._flat_weights[idx] = new_W_hh
 
         num_directions = 2 if self.bidirectional else 1

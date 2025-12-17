@@ -54,7 +54,7 @@ cli = (
     "--keep_checkpoints=10 "
     "--save_every_sec=120 "
     "--save_milestones_sec=4000 "
-    #"--save_best_every_sec=30 "
+    "--save_best_every_sec=600 "
     "--decoder_mlp_layers 128 128 "
     "--env_frameskip=8 "
     "--core_name=BypassFixedESNPreGeneratedWeights "
