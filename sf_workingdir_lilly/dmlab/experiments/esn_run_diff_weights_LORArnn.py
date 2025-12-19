@@ -3,10 +3,9 @@ from sample_factory.launcher.run_description import Experiment, ParamGrid, RunDe
 
 _params = ParamGrid(
     [
-        ("seed",[1111,2222,3333]),
-        # ("spectral_radius",[1.0, 1.1, 1.3, 1.4, 1.5, 1.6]) # TODO
-        ("weight_trial", [2, 10, 16, 19, 10, 21, 25, 26, 31, 32, 34, 37, 44, 46, 48]) 
-        
+        ("seed",[1111,2222,3333,4444,5555]),
+        #("spectral_radius",[1.0, 1.1, 1.3, 1.4, 1.5, 1.6]) # TODO
+        # ("weight_trial",[12, 14, 23, 24, 29, 30, 39, 45])  # 14, 39, 23, 45, 24, 30, 29
     ]
 )
 
@@ -40,8 +39,8 @@ cli = (
     "--dmlab_one_task_per_worker=True "
     "--dmlab_use_level_cache=True "
     "--set_workers_cpu_affinity=True "
-    "--num_policies=1 "
-    "--with_pbt=False "
+    "--num_policies=4 "
+    "--with_pbt=True "
     "--pbt_replace_reward_gap=0.05 "
     "--pbt_replace_reward_gap_absolute=5.0 "
     "--pbt_period_env_steps=5000000 "
@@ -55,10 +54,10 @@ cli = (
     "--keep_checkpoints=10 "
     "--save_every_sec=120 "
     "--save_milestones_sec=4000 "
-    "--save_best_every_sec=600 "
+    "--save_best_every_sec=600 "  # TODO
     "--decoder_mlp_layers 128 128 "
     "--env_frameskip=4 "  # TODO
-    "--core_name=BypassFixedESNPreGeneratedWeights "
+    "--core_name=BypassFixedESNPreGeneratedWeightsLORA "
     "--DG_name=batchnorm_relu "  #linear_relu
     "--DG_BN_intercept=2.43 "
     "--depth_sensor=True "
@@ -82,7 +81,7 @@ cli = (
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_esn_different_weights_39 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_rnn_lora_34 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -96,7 +95,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNDifferentWeightsIsolatedFeatures39", cli, _params.generate_params(False)),  # TODO
+    Experiment("RNNLORA34", cli, _params.generate_params(False)),  # TODO
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
@@ -108,4 +107,4 @@ RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
 
 # python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir.dmlab.experiments.distance_metric_run --slurm_partition=genoa --slurm_timeout=30:05:00
 
-# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_diff_weights7 --slurm_partition=genoa --slurm_timeout=30:05:00
+# python -m sample_factory.launcher.run --backend=slurm --slurm_workdir=./slurm_grid --slurm_gpus_per_job=0 --slurm_cpus_per_gpu=48 --slurm_sbatch_template=./training_templates/training_template.sh --pause_between=1 --slurm_print_only=False --run=sf_workingdir_lilly.dmlab.experiments.esn_run_diff_weights_LORArnn --slurm_partition=cpu --slurm_timeout=30:05:00

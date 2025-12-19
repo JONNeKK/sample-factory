@@ -123,12 +123,14 @@ class CustomRNN(RNNBase):
         self._update_flat_weights()
 
         # add low-rank adaptation to the recurrent weights
+        weights = list(self._flat_weights)
+
         idx = self._flat_weights_names.index("weight_hh_l0")
-        W_hh_base = self._flat_weights[idx]
-        log.debug(f"current low rank components: {self.lr_column, self.lr_row}")  #TODO wegmachen
+        W_hh_base = weights[idx]
+        #log.debug(f"current low rank components: {self.lr_column, self.lr_row}")  #TODO wegmachen
         new_W_hh = W_hh_base + self.lr_column @ self.lr_row
-        log.debug(f"whh with low rank components: {new_W_hh}")
-        self._flat_weights[idx] = new_W_hh
+        #log.debug(f"whh with low rank components: {new_W_hh}")
+        weights[idx] = new_W_hh
 
         num_directions = 2 if self.bidirectional else 1
         orig_input = input
@@ -194,7 +196,7 @@ class CustomRNN(RNNBase):
                 result = _VF.rnn_tanh(
                     input,
                     hx,
-                    self._flat_weights,  # type: ignore[arg-type]
+                    weights,  # type: ignore[arg-type]
                     self.bias,
                     self.num_layers,
                     self.dropout,
@@ -206,7 +208,7 @@ class CustomRNN(RNNBase):
                 result = _VF.rnn_relu(
                     input,
                     hx,
-                    self._flat_weights,  # type: ignore[arg-type]
+                    weights,  # type: ignore[arg-type]
                     self.bias,
                     self.num_layers,
                     self.dropout,
@@ -220,7 +222,7 @@ class CustomRNN(RNNBase):
                     input,
                     batch_sizes,
                     hx,
-                    self._flat_weights,  # type: ignore[arg-type]
+                    weights,  # type: ignore[arg-type]
                     self.bias,
                     self.num_layers,
                     self.dropout,
@@ -232,7 +234,7 @@ class CustomRNN(RNNBase):
                     input,
                     batch_sizes,
                     hx,
-                    self._flat_weights,  # type: ignore[arg-type]
+                    weights,  # type: ignore[arg-type]
                     self.bias,
                     self.num_layers,
                     self.dropout,

@@ -100,22 +100,29 @@ def test_lr_updates(Hippo_R, Hippo_L, Hippo_n_feature, time_steps=10):
     rnn.lr_column.requires_grad = True
     rnn.lr_row.requires_grad = True
 
-    output = torch.zeros(time_steps, hidden_size)
+    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam([p for p in rnn.parameters() if p.requires_grad],lr=1e-3)
 
     # first input
-    u = torch.zeros(1,1,Hippo_n_feature) # shape: (1, B, n_feature)
-    u[:,0,0] = 1.0
-    h0 = torch.zeros(1,1,hidden_size)
-    y, h = rnn.forward(u, h0)
-    output[0,:] = h
+    #u = torch.zeros(1,1,Hippo_n_feature) # shape: (1, B, n_feature)
+    #u[:,0,0] = 1.0
+    #h0 = torch.zeros(1,1,hidden_size)
+    #y, h = rnn.forward(u, h0)
+    h = torch.zeros(1,1,hidden_size)
+    target = torch.zeros_like(h)
+    target[:, :, -1] = 1.0
 
-    # zero inputs for the amount of time steps
     for i in range(1, time_steps):
+        h = h.detach()
+        optimizer.zero_grad(set_to_none=True)
         u = torch.zeros(1,1,Hippo_n_feature)
+        input_idx = i % Hippo_n_feature
+        u[:,:,input_idx] = 1.0
         y, h = rnn.forward(u, h)
-        # update the output vector: update the row corresponding to the current time step
-        output[i,:] = h
-        i += 1
+        loss = criterion(y, target)
+        loss.backward()                  
+        optimizer.step() 
+    
 
 if __name__ == "__main__":
     Hippo_R = 2
@@ -123,6 +130,7 @@ if __name__ == "__main__":
     Hippo_n_feature = 4
     time_steps = 10
 
-    output = test_forward(Hippo_R, Hippo_L, Hippo_n_feature, time_steps)
-    print("Output shape:", output.shape)
-    print("Output:", output)
+    test_lr_updates(Hippo_R, Hippo_L, Hippo_n_feature, time_steps)
+    #print("Output shape:", output.shape)
+    #print("Output:", output)
+    

@@ -56,7 +56,7 @@ cli = (
     "--save_milestones_sec=4000 "
     #"--save_best_every_sec=30 "  #TODO 600
     "--decoder_mlp_layers 128 128 "
-    "--env_frameskip=8 "  # TODO change to 4
+    "--env_frameskip=4 "  # TODO change to 4
     "--core_name=BypassFixedESNPreGeneratedWeights "
     "--DG_name=batchnorm_relu "  #TODO linear_relu
     "--DG_BN_intercept=2.43 "
@@ -82,7 +82,7 @@ cli = (
     "--nonlinearity=relu "
     "--with_wandb=True "
     "--wandb_user=xiaoxionglin-bernstein-center-freiburg "
-    "--wandb_project=SF_dmlab_esn_shrunk_27 "  # TODO change the project name for different trials
+    "--wandb_project=SF_dmlab_esn_shrunk_37 "  # TODO change the project name for different trials
     "--benchmark=False "
     "--with_number_instruction=True "
     #"--number_instruction_coef=9 "
@@ -96,7 +96,7 @@ cli = (
 
 
 _experiments = [
-    Experiment("ESNShrunk27", cli, _params.generate_params(False)),  # TODO
+    Experiment("ESNShrunk37", cli, _params.generate_params(False)),  # TODO
 ]
 
 RUN_DESCRIPTION = RunDescription(f"{vstr}", experiments=_experiments)
