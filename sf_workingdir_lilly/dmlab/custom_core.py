@@ -596,8 +596,8 @@ class FixedESNWithBypassCorePreGeneratedWeights(ModelCore):
             
             return concat_output, concat_hidden
         
-# TODO change name because here the weights are not pregenerated but in sequence
-class FixedESNWithBypassCorePreGeneratedWeightsLORA(ModelCore):
+
+class FixedRNNWithBypassCoreLORA(ModelCore):
     def __init__(self, cfg, input_size):
         """
         Args:
@@ -623,12 +623,15 @@ class FixedESNWithBypassCorePreGeneratedWeightsLORA(ModelCore):
         self.n_feature = self.Hippo_n_feature
         self.hidden_size = self.n_feature * self.expanded_length
 
+        self.lora_rank = getattr(cfg, 'lora_rank', 1)
+
         # Create a one-layer RNN with ReLU activation.
         
         self.rnn = CustomRNN(input_size=self.n_feature, 
                           hidden_size=self.hidden_size,
                           num_layers=1, 
                           nonlinearity='relu',
+                          rank=self.lora_rank,
                           batch_first=False,
                           bias=False)
         
@@ -789,12 +792,24 @@ class FixedESNWithBypassCoreRandomNetworkLORA(ModelCore):  # same as pregenerate
         self.n_feature = self.Hippo_n_feature
         self.hidden_size = self.n_feature * self.expanded_length
 
+        self.sparsity = getattr(cfg, 'sparsity', 0.2)
+        self.spectral_radius = getattr(cfg, 'spectral_radius', 0.9)
+        self.trial = getattr(cfg, 'weight_trial', 1)
+        self.weight_folder = getattr(cfg, 'weight_folder', 'weights')
+        self.isolated_features = (cfg, 'isolated_features', False)
+
+        self.fixed_wih = (cfg, 'fixed_wih', False)
+        self.fixed_whh = (cfg, 'fixed_whh', False)
+
+        self.lora_rank = getattr(cfg, 'lora_rank', 1)
+
         # Create a one-layer RNN with ReLU activation.
         
         self.rnn = CustomRNN(input_size=self.n_feature, 
                           hidden_size=self.hidden_size,
                           num_layers=1, 
                           nonlinearity='relu',
+                          rank=self.lora_rank,
                           batch_first=False,
                           bias=False)
         
@@ -2223,8 +2238,8 @@ def make_hipposlam_core(cfg: Config, core_input_size: int) -> ModelCore:
             core = FixedESNWithBypassCoreEchoTorchWeights(cfg, core_input_size)
         elif cfg.core_name =='BypassFixedESNPreGeneratedWeights':
             core = FixedESNWithBypassCorePreGeneratedWeights(cfg, core_input_size)
-        elif cfg.core_name =='BypassFixedESNPreGeneratedWeightsLORA':
-            core = FixedESNWithBypassCorePreGeneratedWeightsLORA(cfg, core_input_size)
+        elif cfg.core_name =='BypassFixedRNNLORA':
+            core = FixedRNNWithBypassCoreLORA(cfg, core_input_size)
         elif cfg.core_name =='BypassFixedESNRandomNetworkLORA':
             core = FixedESNWithBypassCoreRandomNetworkLORA(cfg, core_input_size)
     else:

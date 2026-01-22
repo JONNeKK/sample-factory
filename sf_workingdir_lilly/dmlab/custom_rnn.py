@@ -127,9 +127,8 @@ class CustomRNN(RNNBase):
 
         idx = self._flat_weights_names.index("weight_hh_l0")
         W_hh_base = weights[idx]
-        #log.debug(f"current low rank components: {self.lr_column, self.lr_row}")  #TODO wegmachen
         new_W_hh = W_hh_base + self.lr_column @ self.lr_row
-        #log.debug(f"whh with low rank components: {new_W_hh}")
+        # update recurrent weights to the new weights with low-rank adaptation
         weights[idx] = new_W_hh
 
         num_directions = 2 if self.bidirectional else 1

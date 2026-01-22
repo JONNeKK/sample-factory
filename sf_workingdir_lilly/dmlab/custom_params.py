@@ -37,6 +37,8 @@ def add_hipposlam_env_args(parser: argparse.ArgumentParser) -> None:
     p.add_argument("--fixed_wih", default=False, type=bool, help="determines whether the input weight matrix is the same for all features")
     p.add_argument("--fixed_whh", default=False, type=bool, help="determines whether the recurrent weight matrix is the same for all features")
 
+    p.add_argument("--lora_rank", default=1, type=int, help="determines the rank of the low-rank adaptation to the recurrent weight matrix")
+
     p.add_argument("--simple_sequence", default=False, type=bool, help="simple sequence, simply shrinking feature dimensions and expanding features to include their history")
     p.add_argument("--core_name", default=None, type=str, help="simple sequence, simply shrinking feature dimensions and expanding features to include their history")
     p.add_argument("--encoder_name", default=None, type=str, help="actually using dmlab encoders")

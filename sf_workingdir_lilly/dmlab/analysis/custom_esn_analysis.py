@@ -7,7 +7,7 @@ import numpy as np
 
 from sf_workingdir_lilly.dmlab.custom_weight_generator import return_weights_for_iso_feat, return_weights_for_spec_rad
 
-
+ 
 def get_hidden_states(time_steps, spectral_radius, Hippo_n_feature, Hippo_R, Hippo_L, trial=1):
 
     # create the rnn

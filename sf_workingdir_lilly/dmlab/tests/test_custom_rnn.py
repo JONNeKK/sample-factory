@@ -122,7 +122,19 @@ def test_lr_updates(Hippo_R, Hippo_L, Hippo_n_feature, time_steps=10):
         loss = criterion(y, target)
         loss.backward()                  
         optimizer.step() 
-    
+
+def test_rank(Hippo_R, Hippo_L, Hippo_n_feature, rank):
+    expanded_length = Hippo_R + Hippo_L - 1
+    hidden_size = Hippo_n_feature * expanded_length
+    rnn = CustomRNN(input_size=Hippo_n_feature, 
+                          hidden_size=hidden_size,
+                          num_layers=1, 
+                          nonlinearity='relu',
+                          rank = rank,
+                          batch_first=False,
+                          bias=False)
+    print("Rank of lr_row:", rnn.lr_row.shape)
+    print("Rank of lr_column:", rnn.lr_column.shape)
 
 if __name__ == "__main__":
     Hippo_R = 2
@@ -130,7 +142,9 @@ if __name__ == "__main__":
     Hippo_n_feature = 4
     time_steps = 10
 
-    test_lr_updates(Hippo_R, Hippo_L, Hippo_n_feature, time_steps)
+    test_rank(Hippo_R, Hippo_L, Hippo_n_feature, rank=5)
+
+    #test_lr_updates(Hippo_R, Hippo_L, Hippo_n_feature, time_steps)
     #print("Output shape:", output.shape)
     #print("Output:", output)
     
