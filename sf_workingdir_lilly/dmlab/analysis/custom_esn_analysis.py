@@ -1,3 +1,4 @@
+import pickle
 import torch
 from torch import nn 
 from sklearn.decomposition import PCA
@@ -332,12 +333,64 @@ def get_orthogonal_vector(v1, v2):
 def get_time_of_threshold_crossing(len_ortho_vec, threshold=0.1):
     """
     len_ortho_vec: (trials, Hippo_n_feature, time_steps-1)
+    the threshold is at threshold (default 0.1) of the first value
     return: time step for each trial at which the length of the orthogonal vector crossed the threshold
     """
+    thresh = len_ortho_vec[:,0,0] * threshold
+    #print('thresh ', thresh)
     thresh_crossed = np.zeros(len_ortho_vec.shape[0])
     for t in range(len_ortho_vec.shape[0]):
-        thresh_crossed[t] = np.where(len_ortho_vec[t,0,:] < threshold)[0][0]
+        thresh_crossed[t] = np.where(len_ortho_vec[t,0,:] < thresh[t])[0][0]
     return thresh_crossed
+
+
+def get_time_of_norm_threshold_crossing(stable_norm, threshold=0.1):
+    """
+    len_ortho_vec: (trials, time_steps)
+    the threshold is at threshold (default 0.1) of the first value
+    return: time step for each trial at which the length of the orthogonal vector crossed the threshold
+    """
+    thresh = stable_norm[:,0] * threshold
+    print('thresh ', thresh)
+    thresh_crossed = np.zeros(stable_norm.shape[0])
+    for t in range(stable_norm.shape[0]):
+        try:
+            thresh_crossed[t] = np.where(stable_norm[t,:] < thresh[t])[0][0]
+        except:
+            thresh_crossed[t] = 70
+    return thresh_crossed
+
+
+'''
+def get_time_of_norm_threshold_crossing_fixed_sequence(stable_norm, threshold=0.1):
+    """
+    the threshold is at threshold (default 0.1) of the first value
+    return: 
+    """
+    thresh = stable_norm[0] * threshold
+    print('thresh ', thresh)
+    for t in range(stable_norm.shape[0]):
+        try:
+            thresh_crossed = np.where(stable_norm[t] < thresh)[0][0]
+        except:
+            print('exception')
+            thresh_crossed = 70
+    return thresh_crossed
+'''
+
+def get_time_of_norm_threshold_crossing_fixed_sequence(stable_norm, threshold=0.1):
+    """
+    the threshold is at threshold (default 0.1) of the first value
+    return: 
+    """
+    thresh = stable_norm[0] * threshold
+    for t in range(stable_norm.shape[0]):
+        try:
+            thresh_crossed = np.where(stable_norm < thresh)[0][0]
+        except:
+            thresh_crossed = 70
+    return thresh_crossed
+
         
 def exp_func(x, a, tau):
     return a * np.exp(-x / tau)
@@ -352,15 +405,16 @@ def stable_trials(norms):
 
 
 def main():
-    spectral_radius = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.92, 0.95, 0.97, 0.99]
-
-    hs = get_hidden_states_iso_feat(70, 0.5, 16, 8, 64, trial=1, fixed_whh=True)  
-
-    #hs = torch.Tensor([[1,2,3,4,5],[6,7,8,9,0]])
-    len_orth_vec = np.array([[1, 0.8, 0.6, 0.4, 0.2, 0.1, 0.1], [1, 0.8, 0.6, 0.4, 0.1, 0.09, 0.00005], [1, 0.8, 0.6, 0.1, 0.02, 0.01, 0.005]])
-    #print(len_orth_vec.shape)
-    idx_stable_trials = stable_trials(len_orth_vec)
-    print(idx_stable_trials)
+    import pickle
+    with open("/home/fr/fr_lr554/samplefactory/sample-factory/sf_workingdir_lilly/dmlab/analysis/data/random.pkl", "rb") as f:
+        stable_trials_norms = pickle.load(f)
+    
+    print('############################')
+    print('shape orth vec lens ', stable_trials_norms.shape)
+    print('############################')
+    
+    thresh_crossed = get_time_of_norm_threshold_crossing(stable_trials_norms, threshold=0.1)
+    print(thresh_crossed)
     
 
 if __name__ == "__main__":
